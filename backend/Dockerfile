@@ -1,23 +1,33 @@
-# backend/Dockerfile
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances
+# Install necessary build tools and libraries
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files and install dependencies
 COPY package*.json ./
 COPY prisma ./prisma/
+RUN npm install
 
-# Installer les dépendances
-RUN npm ci
+# Install Prisma CLI globally
+RUN npm install -g prisma
 
-# Générer le client Prisma
+# Generate Prisma client
 RUN npx prisma generate
 
-# Copier le reste des fichiers de l'application
-COPY . .
-
-# Exposer le port sur lequel l'application s'exécute
+# Expose port for the application
 EXPOSE 3001
 
-# Commande pour démarrer l'application
-CMD ["npm", "run", "dev"]
+# Copy the rest of the application files
+COPY . .
+
+# Copy and set the entrypoint script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Use the entrypoint script
+CMD ["/start.sh"]

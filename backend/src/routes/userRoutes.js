@@ -18,17 +18,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
-router.post(
-  "/register",
-  validateRequest({ body: registerUserSchema }),
-  asyncHandler(register)
-);
-router.post(
-  "/login",
-  validateRequest({ body: loginUserSchema }),
-  asyncHandler(login)
-);
+// Public routes
+router.post("/register", register);
+router.post("/login", login);
 
+// Protected routes
 router.use(authMiddleware);
 
 router.get("/me", asyncHandler(getCurrentUser));
