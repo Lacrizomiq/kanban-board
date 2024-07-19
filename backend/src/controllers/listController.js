@@ -1,30 +1,41 @@
 import { PrismaClient } from "@prisma/client";
-import ApiError from "../utils/apiError";
+import ApiError from "../utils/apiError.js";
 
 const prisma = new PrismaClient();
 
-export const createList = async (req, res) => {
-  const { boardId, name } = req.body;
-  const userId = req.user.id;
-
-  const board = await prisma.board.findFirst({
-    where: {
-      id: boardId,
-      OR: [{ ownerId: userId }, { sharedWith: { some: { userId: userId } } }],
-    },
+const checkBoardAccess = async (userId, boardId, requiredRole) => {
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+    include: { sharedWith: { where: { userId } } },
   });
 
   if (!board) {
-    throw new ApiError(404, "Board not found or you do not have access to it");
+    throw new ApiError(404, "Board not found");
   }
+
+  if (board.ownerId === userId) return true;
+
+  const userRole = board.sharedWith[0]?.role;
+
+  if (!userRole) {
+    throw new ApiError(403, "You do not have access to this board");
+  }
+
+  const roles = ["viewer", "editor", "admin"];
+  return roles.indexOf(userRole) >= roles.indexOf(requiredRole);
+};
+
+export const createList = async (req, res) => {
+  const { name, boardId } = req.body;
+  const userId = req.user.id;
+
+  await checkBoardAccess(userId, boardId, "editor");
 
   const list = await prisma.list.create({
     data: {
       name,
       boardId,
-      order: await prisma.list.count({
-        where: { boardId },
-      }),
+      order: await prisma.list.count({ where: { boardId } }),
     },
   });
 
@@ -35,27 +46,12 @@ export const getLists = async (req, res) => {
   const { boardId } = req.params;
   const userId = req.user.id;
 
-  const board = await prisma.board.findFirst({
-    where: {
-      id: boardId,
-      OR: [{ ownerId: userId }, { sharedWith: { some: { userId: userId } } }],
-    },
-  });
-
-  if (!board) {
-    throw new ApiError(404, "Board not found or you do not have access to it");
-  }
+  await checkBoardAccess(userId, boardId, "viewer");
 
   const lists = await prisma.list.findMany({
-    where: {
-      boardId,
-    },
-    orderBy: {
-      order: "asc",
-    },
-    include: {
-      tasks: true,
-    },
+    where: { boardId },
+    orderBy: { order: "asc" },
+    include: { tasks: true },
   });
 
   res.json(lists);
@@ -75,12 +71,7 @@ export const updateList = async (req, res) => {
     throw new ApiError(404, "List not found");
   }
 
-  if (
-    list.board.ownerId !== userId &&
-    !list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(403, "You do not have permission to update this list");
-  }
+  await checkBoardAccess(userId, list.boardId, "editor");
 
   const updatedList = await prisma.list.update({
     where: { id },
@@ -103,16 +94,9 @@ export const deleteList = async (req, res) => {
     throw new ApiError(404, "List not found");
   }
 
-  if (
-    list.board.ownerId !== userId &&
-    !list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(403, "You do not have permission to delete this list");
-  }
+  await checkBoardAccess(userId, list.boardId, "editor");
 
-  await prisma.list.delete({
-    where: { id },
-  });
+  await prisma.list.delete({ where: { id } });
 
   res.status(204).send();
 };

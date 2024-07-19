@@ -9,18 +9,18 @@ import {
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import validateRequest from "../middleware/validateRequest.js";
 import {
-  registerSchema,
+  registerUserSchema,
   loginUserSchema,
   updateUserSchema,
   inviteUserSchema,
-} from "../schemas/userSchema.js";
+} from "../validations/userSchemas.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
 router.post(
   "/register",
-  validateRequest({ body: registerSchema }),
+  validateRequest({ body: registerUserSchema }),
   asyncHandler(register)
 );
 router.post(

@@ -23,4 +23,11 @@ export const updateUserSchema = z.object({
 export const inviteUserSchema = z.object({
   email: z.string().email("Invalid email address"),
   boardId: z.string().uuid("Invalid board ID"),
+  role: z.enum(["viewer", "editor", "admin"]).default("viewer"),
+});
+
+export const updateBoardAccessSchema = z.object({
+  boardId: z.string().uuid("Invalid board ID"),
+  userId: z.string().uuid("Invalid user ID"),
+  role: z.enum(["viewer", "editor", "admin"]),
 });

@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import ApiError from "../utils/apiError";
+import ApiError from "../utils/apiError.js";
 
 const prisma = new PrismaClient();
 
@@ -86,7 +86,7 @@ export const updateUser = async (req, res) => {
 };
 
 export const inviteUserToBoard = async (req, res) => {
-  const { email, boardId } = req.body;
+  const { email, boardId, role } = req.body;
   const inviterId = req.user.id;
 
   const board = await prisma.board.findUnique({ where: { id: boardId } });
@@ -123,8 +123,68 @@ export const inviteUserToBoard = async (req, res) => {
     data: {
       userId: invitedUser.id,
       boardId,
+      role: role || "viewer",
     },
   });
 
-  res.status(201).json({ message: "Invitation sent successfully" });
+  res
+    .status(201)
+    .json({ message: "Invitation sent successfully", role: invitation.role });
+};
+
+export const getUserBoards = async (req, res) => {
+  const userId = req.user.id;
+
+  const boards = await prisma.board.findMany({
+    where: {
+      OR: [{ ownerId: userId }, { sharedWith: { some: { userId: userId } } }],
+    },
+    include: {
+      sharedWith: {
+        where: { userId: userId },
+        select: { role: true },
+      },
+    },
+  });
+
+  const formattedBoards = boards.map((board) => ({
+    ...board,
+    role: board.ownerId === userId ? "owner" : board.sharedWith[0]?.role,
+    sharedWith: undefined,
+  }));
+
+  res.json(formattedBoards);
+};
+
+export const updateBoardAccess = async (req, res) => {
+  const { boardId, userId, role } = req.body;
+  const requesterId = req.user.id;
+
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+    include: { sharedWith: true },
+  });
+
+  if (!board) {
+    throw new ApiError(404, "Board not found");
+  }
+
+  if (board.ownerId !== requesterId) {
+    throw new ApiError(
+      403,
+      "You do not have permission to modify access to this board"
+    );
+  }
+
+  const updatedAccess = await prisma.usersBoards.update({
+    where: {
+      userId_boardId: {
+        userId: userId,
+        boardId: boardId,
+      },
+    },
+    data: { role },
+  });
+
+  res.json({ message: "Board access updated successfully", updatedAccess });
 };

@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import ApiError from "../utils/apiError";
-import asyncHandler from "../utils/asyncHandler";
+import ApiError from "../utils/apiError.js";
+import asyncHandler from "../utils/asyncHandler.js";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

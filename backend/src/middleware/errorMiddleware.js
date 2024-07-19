@@ -1,4 +1,4 @@
-import ApiError from "../utils/apiError";
+import ApiError from "../utils/apiError.js";
 
 export const errorMiddleware = (err, req, res, next) => {
   let error = err;

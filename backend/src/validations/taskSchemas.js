@@ -1,24 +1,5 @@
 import { z } from "zod";
 
-// List schemas
-export const createListSchema = z.object({
-  name: z
-    .string()
-    .min(1, "List name is required")
-    .max(100, "List name must be 100 characters or less"),
-  boardId: z.string().uuid("Invalid board ID"),
-});
-
-export const updateListSchema = z.object({
-  name: z
-    .string()
-    .min(1, "List name is required")
-    .max(100, "List name must be 100 characters or less")
-    .optional(),
-  order: z.number().int().min(0).optional(),
-});
-
-// Task schemas
 export const createTaskSchema = z.object({
   title: z
     .string()
@@ -30,8 +11,14 @@ export const createTaskSchema = z.object({
     .optional(),
   listId: z.string().uuid("Invalid list ID"),
   dueDate: z.string().datetime().optional(),
+  tagId: z.string().uuid("Invalid tag ID").optional(),
+  assigneeId: z.string().uuid("Invalid assignee ID").optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
   completed: z.boolean().optional(),
+});
+
+export const assignTaskSchema = z.object({
+  assigneeId: z.string().uuid("Invalid assignee ID"),
 });

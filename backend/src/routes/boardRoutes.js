@@ -5,13 +5,17 @@ import {
   getBoardById,
   updateBoard,
   deleteBoard,
-} from "../controllers/boardController";
-import asyncHandler from "../utils/asyncHandler";
-import authMiddleware from "../middleware/authMiddleware";
-import validateRequest from "../middleware/validateRequest";
-import { createBoardSchema, updateBoardSchema } from "../validations/schemas";
+} from "../controllers/boardController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import validateRequest from "../middleware/validateRequest.js";
+import {
+  createBoardSchema,
+  updateBoardSchema,
+} from "../validations/boardSchemas.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 const router = express.Router();
+
 router.use(authMiddleware);
 
 router.post(

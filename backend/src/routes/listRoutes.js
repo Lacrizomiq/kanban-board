@@ -4,11 +4,11 @@ import {
   getLists,
   updateList,
   deleteList,
-} from "../controllers/listController";
-import { authMiddleware } from "../middleware/authMiddleware";
-import asyncHandler from "../utils/asyncHandler";
-import validateRequest from "../middleware/validateRequest";
-import { createListSchema, updateListSchema } from "../validations/schemas";
+} from "../controllers/listController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import validateRequest from "../middleware/validateRequest.js";
+import { createListSchema, updateListSchema } from "../validations/schemas.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.post(
   validateRequest({ body: createListSchema }),
   asyncHandler(createList)
 );
-router.get("/:boardId", asyncHandler(getLists));
+router.get("/board/:boardId", asyncHandler(getLists));
 router.put(
   "/:id",
   validateRequest({ body: updateListSchema }),

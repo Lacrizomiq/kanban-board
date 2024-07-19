@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import ApiError from "../utils/apiError";
-import asyncHandler from "../utils/asyncHandler";
+import ApiError from "../utils/apiError.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 const prisma = new PrismaClient();
 

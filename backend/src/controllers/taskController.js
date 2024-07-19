@@ -1,34 +1,44 @@
 import { PrismaClient } from "@prisma/client";
+import ApiError from "../utils/apiError.js";
 
 const prisma = new PrismaClient();
 
-export const createTask = async (req, res, next) => {
-  const { title, description, listId, dueDate } = req.body;
+const checkBoardAccess = async (userId, boardId, requiredRole) => {
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+    include: { sharedWith: { where: { userId } } },
+  });
+
+  if (!board) {
+    throw new ApiError(404, "Board not found");
+  }
+
+  if (board.ownerId === userId) return true;
+
+  const userRole = board.sharedWith[0]?.role;
+
+  if (!userRole) {
+    throw new ApiError(403, "You do not have access to this board");
+  }
+
+  const roles = ["viewer", "editor", "admin"];
+  return roles.indexOf(userRole) >= roles.indexOf(requiredRole);
+};
+
+export const createTask = async (req, res) => {
+  const { title, description, listId, dueDate, tagId, assigneeId } = req.body;
   const userId = req.user.id;
 
-  // Verifie que l'utilisateur a accès à la liste
   const list = await prisma.list.findUnique({
-    where: {
-      id: listId,
-    },
-    include: {
-      board: true,
-    },
+    where: { id: listId },
+    include: { board: true },
   });
 
   if (!list) {
-    return next(ApiError);
+    throw new ApiError(404, "List not found");
   }
 
-  if (
-    list.board.userId !== userId &&
-    !list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(
-      403,
-      "You do not have permission to add tasks to this list"
-    );
-  }
+  await checkBoardAccess(userId, list.boardId, "editor");
 
   const task = await prisma.task.create({
     data: {
@@ -36,59 +46,46 @@ export const createTask = async (req, res, next) => {
       description,
       listId,
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      tagId,
+      assigneeId,
     },
+    include: { tag: true, assignee: true },
   });
 
   res.status(201).json(task);
 };
 
-export const getTasks = async (req, res, next) => {
+export const getTasks = async (req, res) => {
   const { listId } = req.params;
   const userId = req.user.id;
 
   const list = await prisma.list.findUnique({
-    where: {
-      id: listId,
-    },
-    include: {
-      list: true,
-    },
+    where: { id: listId },
+    include: { board: true },
   });
 
   if (!list) {
     throw new ApiError(404, "List not found");
   }
 
-  if (
-    list.board.ownerId !== userId &&
-    !list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(
-      403,
-      "You do not have permission to view tasks in this list"
-    );
-  }
+  await checkBoardAccess(userId, list.boardId, "viewer");
 
   const tasks = await prisma.task.findMany({
-    where: {
-      listId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    where: { listId },
+    orderBy: { createdAt: "asc" },
   });
 
   res.json(tasks);
 };
 
-export const getTaskById = async (req, res, next) => {
+export const updateTask = async (req, res) => {
   const { id } = req.params;
+  const { title, description, completed, dueDate, listId, tagId, assigneeId } =
+    req.body;
   const userId = req.user.id;
 
   const task = await prisma.task.findUnique({
-    where: {
-      id,
-    },
+    where: { id },
     include: { list: { include: { board: true } } },
   });
 
@@ -96,61 +93,31 @@ export const getTaskById = async (req, res, next) => {
     throw new ApiError(404, "Task not found");
   }
 
-  if (
-    task.list.board.ownerId !== userId &&
-    !task.list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(403, "You do not have permission to view this task");
-  }
-
-  res.json(task);
-};
-
-export const updateTask = async (req, res, next) => {
-  const { id } = req.params;
-  const { title, description, dueDate } = req.body;
-  const userId = req.user.id;
-
-  const task = await prisma.task.findUnique({
-    where: {
-      id,
-    },
-    include: { list: { include: { board: true } } },
-  });
-
-  if (!task) {
-    throw new ApiError(404, "Task not found");
-  }
-
-  if (
-    task.list.board.ownerId !== userId &&
-    !task.list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(403, "You do not have permission to update this task");
-  }
+  await checkBoardAccess(userId, task.list.boardId, "editor");
 
   const updatedTask = await prisma.task.update({
-    where: {
-      id,
-    },
+    where: { id },
     data: {
       title,
       description,
+      completed,
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      listId,
+      tagId,
+      assigneeId,
     },
+    include: { tag: true, assignee: true },
   });
 
   res.json(updatedTask);
 };
 
-export const deleteTask = async (req, res, next) => {
+export const deleteTask = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
   const task = await prisma.task.findUnique({
-    where: {
-      id,
-    },
+    where: { id },
     include: { list: { include: { board: true } } },
   });
 
@@ -158,18 +125,90 @@ export const deleteTask = async (req, res, next) => {
     throw new ApiError(404, "Task not found");
   }
 
-  if (
-    task.list.board.ownerId !== userId &&
-    !task.list.board.sharedWith.some((ub) => ub.userId === userId)
-  ) {
-    throw new ApiError(403, "You do not have permission to delete this task");
-  }
+  await checkBoardAccess(userId, task.list.boardId, "editor");
 
-  await prisma.task.delete({
-    where: {
-      id,
-    },
+  await prisma.task.delete({ where: { id } });
+
+  res.status(204).send();
+};
+
+export const addTagToTask = async (req, res) => {
+  const { taskId, tagId } = req.params;
+  const userId = req.user.id;
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { list: { include: { board: true } } },
   });
 
-  res.status(204).end();
+  if (!task) {
+    throw new ApiError(404, "Task not found");
+  }
+
+  await checkBoardAccess(userId, task.list.boardId, "editor");
+
+  const updatedTask = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      tags: {
+        connect: { id: tagId },
+      },
+    },
+    include: { tags: true },
+  });
+
+  res.json(updatedTask);
+};
+
+export const removeTagFromTask = async (req, res) => {
+  const { taskId, tagId } = req.params;
+  const userId = req.user.id;
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { list: { include: { board: true } } },
+  });
+
+  if (!task) {
+    throw new ApiError(404, "Task not found");
+  }
+
+  await checkBoardAccess(userId, task.list.boardId, "editor");
+
+  const updatedTask = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      tags: {
+        disconnect: { id: tagId },
+      },
+    },
+    include: { tags: true },
+  });
+
+  res.json(updatedTask);
+};
+
+export const assignTask = async (req, res) => {
+  const { id } = req.params;
+  const { assigneeId } = req.body;
+  const userId = req.user.id;
+
+  const task = await prisma.task.findUnique({
+    where: { id },
+    include: { list: { include: { board: true } } },
+  });
+
+  if (!task) {
+    throw new ApiError(404, "Task not found");
+  }
+
+  await checkBoardAccess(userId, task.list.boardId, "editor");
+
+  const updatedTask = await prisma.task.update({
+    where: { id },
+    data: { assigneeId },
+    include: { assignee: true },
+  });
+
+  res.json(updatedTask);
 };
