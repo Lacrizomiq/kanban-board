@@ -1,10 +1,16 @@
 import { z } from "zod";
 
 export const createBoardSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Board name is required")
-    .max(100, "Board name must be 100 characters or less"),
+  body: z.object({
+    name: z.string().min(1, "Board name is required"),
+  }),
 });
 
-export const updateBoardSchema = createBoardSchema.partial();
+export const updateBoardSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, "Board name is required"),
+  }),
+  params: z.object({
+    id: z.string().uuid("Invalid board ID"),
+  }),
+});

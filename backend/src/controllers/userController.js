@@ -5,31 +5,50 @@ import ApiError from "../utils/apiError.js";
 
 const prisma = new PrismaClient();
 
-export const register = async (req, res) => {
-  const { email, password, name } = req.body;
+export const register = async (req, res, next) => {
+  try {
+    console.log("Register function called");
+    console.log("Request body:", req.body);
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    throw new ApiError(400, "Email already in use");
-  }
+    const { email, password, name } = req.body;
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      throw new ApiError(400, "Email already in use");
+    }
 
-  const user = await prisma.user.create({
-    data: {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const userData = {
       email,
       password: hashedPassword,
-      name,
-    },
-  });
+    };
 
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
-  });
+    if (name) {
+      userData.name = name;
+    }
 
-  res
-    .status(201)
-    .json({ user: { id: user.id, email: user.email, name: user.name }, token });
+    const user = await prisma.user.create({
+      data: userData,
+    });
+
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    console.log("User registered successfully:", {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    });
+    res.status(201).json({
+      user: { id: user.id, email: user.email, name: user.name },
+      token,
+    });
+  } catch (error) {
+    console.error("Error in register:", error);
+    next(error);
+  }
 };
 
 export const login = async (req, res) => {

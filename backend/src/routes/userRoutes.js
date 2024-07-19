@@ -1,4 +1,3 @@
-/*
 import express from "express";
 import {
   register,
@@ -20,9 +19,10 @@ import asyncHandler from "../utils/asyncHandler.js";
 const router = express.Router();
 
 // Public routes
-router.post("/register", register);
+router.post("/register", validateRequest(registerUserSchema), register);
 router.post("/login", login);
 
+console.log("User routes configured");
 // Protected routes
 router.use(authMiddleware);
 
@@ -37,36 +37,5 @@ router.post(
   validateRequest({ body: inviteUserSchema }),
   asyncHandler(inviteUserToBoard)
 );
-
-export default router;
-*/
-
-// src/routes/userRoutes.js
-
-import express from "express";
-import {
-  register,
-  login,
-  getCurrentUser,
-  updateUser,
-  inviteUserToBoard,
-  getUserBoards,
-  updateBoardAccess,
-} from "../controllers/userController.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
-
-const router = express.Router();
-
-// Public routes
-router.post("/register", register);
-router.post("/login", login);
-
-// Protected routes
-router.use(authMiddleware);
-router.get("/me", getCurrentUser);
-router.put("/", updateUser);
-router.post("/invite", inviteUserToBoard);
-router.get("/boards", getUserBoards);
-router.post("/boards/access", updateBoardAccess);
 
 export default router;

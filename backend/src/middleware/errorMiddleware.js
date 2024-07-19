@@ -1,24 +1,24 @@
 import ApiError from "../utils/apiError.js";
 
 export const errorMiddleware = (err, req, res, next) => {
-  let error = err;
+  console.error("Error caught in middleware:", err);
 
-  if (!(error instanceof ApiError)) {
-    const statusCode = error.statusCode || 500;
-    const message = error.message || "Internal server error";
-    error = new ApiError(statusCode, message, false, error.stack);
-  }
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  const errors = err.errors || [];
 
   const response = {
-    code: error.statusCode,
-    message: error.message,
-    ...(process.env.NODE_ENV === "development" && { stack: error.stack }),
+    success: false,
+    statusCode,
+    message,
+    errors,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   };
 
-  res.status(error.statusCode).json(response);
+  console.log("Sending error response:", response);
+  res.status(statusCode).json(response);
 };
 
 export const notFound = (req, res, next) => {
-  const error = new ApiError(404, `Not Found - ${req.originalUrl}`);
-  next(error);
+  next(new ApiError(404, `Not Found - ${req.originalUrl}`));
 };

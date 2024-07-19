@@ -12,24 +12,17 @@ import {
   createBoardSchema,
   updateBoardSchema,
 } from "../validations/boardSchemas.js";
-import asyncHandler from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-router.post(
-  "/",
-  validateRequest({ body: createBoardSchema }),
-  asyncHandler(createBoard)
-);
-router.get("/", asyncHandler(getBoards));
-router.get("/:id", asyncHandler(getBoardById));
-router.put(
-  "/:id",
-  validateRequest({ body: updateBoardSchema }),
-  asyncHandler(updateBoard)
-);
-router.delete("/:id", asyncHandler(deleteBoard));
+router.post("/", validateRequest(createBoardSchema), createBoard);
+router.get("/", getBoards);
+router.get("/:id", getBoardById);
+router.put("/:id", validateRequest(updateBoardSchema), updateBoard);
+router.delete("/:id", deleteBoard);
 
 export default router;
+
+console.log("Board routes configured");
