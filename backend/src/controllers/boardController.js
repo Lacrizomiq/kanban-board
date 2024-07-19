@@ -4,17 +4,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 
 const prisma = new PrismaClient();
 
-export const createBoard = asyncHandler(async (req, res) => {
-  console.log("createBoard function called");
-  console.log("Request body:", req.body);
-  console.log("User:", req.user);
-
-  const { name } = req.body;
-  const userId = req.user.id;
-
-  console.log(`Creating board with name: ${name} for user: ${userId}`);
-
+export const createBoard = async (req, res, next) => {
   try {
+    const { name } = req.body;
+    const userId = req.user.id;
+
     const board = await prisma.board.create({
       data: {
         name,
@@ -22,13 +16,12 @@ export const createBoard = asyncHandler(async (req, res) => {
       },
     });
 
-    console.log("Board created successfully:", board);
     res.status(201).json(board);
   } catch (error) {
-    console.error("Error creating board:", error);
-    throw new ApiError(500, "Failed to create board", error.message);
+    console.error("Error in createBoard:", error);
+    next(new ApiError(500, "Failed to create board", error.message));
   }
-});
+};
 
 export const getBoards = asyncHandler(async (req, res) => {
   const userId = req.user.id;

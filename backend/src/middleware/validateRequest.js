@@ -6,10 +6,15 @@ const validateRequest = (schema) => (req, res, next) => {
   console.log("Request body:", req.body);
   console.log("Validation schema:", schema);
 
+  if (!schema || !schema.body) {
+    console.log("No schema provided for validation");
+    return next();
+  }
+
   try {
     const validData = schema.body.parse(req.body);
     req.body = validData;
-
+    console.log("Validation successful. Result:", validData);
     next();
   } catch (error) {
     console.error("Validation error:", error);
