@@ -1,7 +1,10 @@
-import Metadata from "next";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+
 import "./globals.css";
-import BoardComponent from "../components/Board/Board";
+import ReactQueryProvider from "../providers/ReactQueryProvider";
+import Header from "@/components/Header/Header";
+import { AuthProvider } from "@/hooks/useAuth";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,8 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <BoardComponent />
-        {children}
+        <ReactQueryProvider>
+          <AuthProvider>
+            <Header />
+            {children}
+          </AuthProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );
