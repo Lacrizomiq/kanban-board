@@ -13,7 +13,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
+
   const { signup } = useAuth();
   const router = useRouter();
 
@@ -21,10 +21,6 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
     try {
-      if (password !== passwordConfirm) {
-        setError("Passwords do not match");
-        return;
-      }
       if (password.length < 8) {
         setError("Password must be at least 8 characters long");
         return;
