@@ -43,7 +43,7 @@ const ListComponent: React.FC<ListComponentProps> = ({ boardId }) => {
   };
 
   return (
-    <div className="flex overflow-x-auto space-x-4 p-4">
+    <div className="flex overflow-x-auto space-x-4 p-4 ">
       {lists &&
         lists.map((list) => (
           <ListItem key={list.id} list={list} boardId={boardId} />
@@ -115,12 +115,15 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
 
   const handleDeleteList = () => {
     if (window.confirm("Are you sure you want to delete this list?")) {
-      deleteListMutation.mutate(list.id);
+      deleteListMutation.mutate({ listId: list.id, boardId });
     }
   };
 
   return (
-    <div className="flex-shrink-0 w-72 bg-gray-100 rounded-lg shadow">
+    <div
+      className="flex-shrink-0 w-72 min-h-96 bg-gray-100 rounded-lg shadow"
+      style={{ minHeight: "24rem" }}
+    >
       <div className="p-3 flex justify-between items-center bg-gray-200 rounded-t-lg">
         {isEditing ? (
           <input
@@ -149,8 +152,8 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
           </button>
         </div>
       </div>
-      <div className="p-3">
-        {/* Ici, vous pouvez ajouter la liste des tâches */}
+      <div className="p-3 min-h-96">
+        {/* C'est ici que j'ajouterai la liste des tâches */}
       </div>
       <div className="p-3 bg-gray-50 rounded-b-lg">
         <button className="w-full text-left text-gray-500 hover:text-gray-700">

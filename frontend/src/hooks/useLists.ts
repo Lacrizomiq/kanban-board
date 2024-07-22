@@ -44,14 +44,12 @@ export const useUpdateList = () => {
 
 export const useDeleteList = () => {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string, { boardId: string }>({
-    mutationFn: async (listId) => {
+  return useMutation<void, Error, { listId: string; boardId: string }>({
+    mutationFn: async ({ listId }) => {
       await api.delete(`/lists/${listId}`);
     },
-    onSuccess: (_, __, context) => {
-      if (context && context.boardId) {
-        queryClient.invalidateQueries({ queryKey: ["lists", context.boardId] });
-      }
+    onSuccess: (_, { boardId }) => {
+      queryClient.invalidateQueries({ queryKey: ["lists", boardId] });
     },
   });
 };
