@@ -65,6 +65,6 @@ export const useBoardById = (boardId: string) => {
       const { data } = await api.get(`/boards/${boardId}`);
       return data;
     },
-    enabled: !!boardId,
+    enabled: !!boardId, // Si le boardId n'est pas défini, ne pas exécuter la requête
   });
 };

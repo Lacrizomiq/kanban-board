@@ -29,7 +29,7 @@ model Board {
   updatedAt  DateTime      @updatedAt
   owner      User          @relation(fields: [ownerId], references: [id])
   ownerId    String
-  lists      List[]
+  lists      List[]        @relation("BoardToList")
   sharedWith UsersBoards[]
 }
 
@@ -51,9 +51,9 @@ model List {
   order     Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  board     Board    @relation(fields: [boardId], references: [id])
+  board     Board    @relation("BoardToList", fields: [boardId], references: [id], onDelete: Cascade)
   boardId   String
-  tasks     Task[]
+  tasks     Task[]   @relation("ListToTask")
 }
 
 model Task {
@@ -64,9 +64,9 @@ model Task {
   dueDate     DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  list        List     @relation(fields: [listId], references: [id])
+  list        List     @relation("ListToTask", fields: [listId], references: [id], onDelete: Cascade)
   listId      String
-  tag         Tag?     @relation(fields: [tagId], references: [id])
+  tag         Tag?     @relation(fields: [tagId], references: [id], onDelete: Cascade)
   tagId       String?
   assignee    User?    @relation(fields: [assigneeId], references: [id])
   assigneeId  String?

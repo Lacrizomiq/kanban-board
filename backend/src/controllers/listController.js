@@ -46,15 +46,21 @@ export const getLists = async (req, res) => {
   const { boardId } = req.params;
   const userId = req.user.id;
 
-  await checkBoardAccess(userId, boardId, "viewer");
+  try {
+    await checkBoardAccess(userId, boardId, "viewer");
 
-  const lists = await prisma.list.findMany({
-    where: { boardId },
-    orderBy: { order: "asc" },
-    include: { tasks: true },
-  });
+    const lists = await prisma.list.findMany({
+      where: { boardId },
+      orderBy: { order: "asc" },
+      include: { tasks: true },
+    });
 
-  res.json(lists);
+    res.json(lists);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching lists", error: error.message });
+  }
 };
 
 export const updateList = async (req, res) => {
