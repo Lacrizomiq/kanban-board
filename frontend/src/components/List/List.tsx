@@ -13,7 +13,6 @@ import AddTaskModal from "@/components/Task/addTaskModal";
 
 interface ListComponentProps {
   boardId: string;
-  initialLists: List[];
 }
 
 const ListComponent: React.FC<ListComponentProps> = ({ boardId }) => {

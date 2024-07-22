@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Task } from "@/schemas";
-import { useUpdateTask, useDeleteTask, useAssignTask } from "@/hooks/useTasks";
+import { useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { PencilIcon, TrashIcon } from "@/components/Icons/Icons";
 
 interface TaskProps {
@@ -16,7 +16,7 @@ const TaskComponent: React.FC<TaskProps> = ({ task, listId }) => {
   );
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
-  const assignTaskMutation = useAssignTask();
+  // const assignTaskMutation = useAssignTask();
 
   const handleUpdateTask = () => {
     if (
@@ -42,9 +42,11 @@ const TaskComponent: React.FC<TaskProps> = ({ task, listId }) => {
     updateTaskMutation.mutate({ id: task.id, completed: !task.completed });
   };
 
+  /*
   const handleAssignTask = (assigneeId: string) => {
     assignTaskMutation.mutate({ id: task.id, assigneeId });
   };
+  */
 
   return (
     <div

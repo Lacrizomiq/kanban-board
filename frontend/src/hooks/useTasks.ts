@@ -31,13 +31,25 @@ export const useCreateTask = () => {
 
 export const useUpdateTask = () => {
   const queryClient = useQueryClient();
-  return useMutation<Task, Error, Partial<Task> & { id: string }>({
-    mutationFn: async ({ id, ...updateData }) => {
-      const { data } = await api.put<Task>(`/tasks/${id}`, updateData);
+  return useMutation<
+    Task,
+    Error,
+    Partial<Task> & { id: string; order?: number }
+  >({
+    mutationFn: async ({ id, order, ...updateData }) => {
+      const { data } = await api.put<Task>(`/tasks/${id}`, {
+        ...updateData,
+        order,
+      });
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", data.listId] });
+      if (variables.listId && variables.listId !== data.listId) {
+        queryClient.invalidateQueries({
+          queryKey: ["tasks", variables.listId],
+        });
+      }
     },
   });
 };
