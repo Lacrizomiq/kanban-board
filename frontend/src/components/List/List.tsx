@@ -7,6 +7,9 @@ import {
 } from "@/hooks/useLists";
 import { List } from "@/schemas";
 import { PlusIcon, PencilIcon, TrashIcon } from "@/components/Icons/Icons";
+import TaskComponent from "@/components/Task/Task";
+import { useTasks } from "@/hooks/useTasks";
+import AddTaskModal from "@/components/Task/addTaskModal";
 
 interface ListComponentProps {
   boardId: string;
@@ -94,8 +97,10 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(list.name);
+  const [isAddingTask, setIsAddingTask] = useState(false);
   const updateListMutation = useUpdateList();
   const deleteListMutation = useDeleteList();
+  const { data: tasks, isLoading: isLoadingTasks } = useTasks(list.id);
 
   const handleUpdateList = () => {
     if (editedName.trim() && editedName !== list.name) {
@@ -121,8 +126,8 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
 
   return (
     <div
-      className="flex-shrink-0 w-72 min-h-96 bg-gray-100 rounded-lg shadow"
-      style={{ minHeight: "24rem" }}
+      className="flex-shrink-0 w-72 bg-gray-100 rounded-lg shadow flex flex-col"
+      style={{ height: "calc(100vh - 200px)" }}
     >
       <div className="p-3 flex justify-between items-center bg-gray-200 rounded-t-lg">
         {isEditing ? (
@@ -152,14 +157,26 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
           </button>
         </div>
       </div>
-      <div className="p-3 min-h-96">
-        {/* C'est ici que j'ajouterai la liste des tâches */}
+      <div className="flex-grow overflow-y-auto p-3">
+        {isLoadingTasks ? (
+          <div>Loading tasks...</div>
+        ) : (
+          tasks?.map((task) => (
+            <TaskComponent key={task.id} task={task} listId={list.id} />
+          ))
+        )}
       </div>
-      <div className="p-3 bg-gray-50 rounded-b-lg">
-        <button className="w-full text-left text-gray-500 hover:text-gray-700">
+      <div className="p-3 bg-gray-50 rounded-b-lg mt-auto">
+        <button
+          onClick={() => setIsAddingTask(true)}
+          className="w-full text-left text-gray-500 hover:text-gray-700"
+        >
           + Add a card
         </button>
       </div>
+      {isAddingTask && (
+        <AddTaskModal listId={list.id} onClose={() => setIsAddingTask(false)} />
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { List, Board } from "@/schemas/index";
+import { List } from "@/schemas/index";
 
 export const useLists = (boardId: string) => {
   return useQuery<List[]>({
