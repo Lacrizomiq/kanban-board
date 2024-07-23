@@ -102,6 +102,7 @@ export const updateTask = async (req, res) => {
       description,
       completed,
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      order,
       listId,
       tagId,
       assigneeId,

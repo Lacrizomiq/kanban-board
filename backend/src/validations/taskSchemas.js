@@ -13,6 +13,7 @@ export const createTaskSchema = z.object({
   dueDate: z.string().datetime().optional(),
   tagId: z.string().uuid("Invalid tag ID").optional(),
   assigneeId: z.string().uuid("Invalid assignee ID").optional(),
+  order: z.number().int().min(0).optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({

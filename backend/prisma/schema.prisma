@@ -64,6 +64,7 @@ model Task {
   dueDate     DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  order       Int      @default(0)
   list        List     @relation("ListToTask", fields: [listId], references: [id], onDelete: Cascade)
   listId      String
   tag         Tag?     @relation(fields: [tagId], references: [id], onDelete: Cascade)
