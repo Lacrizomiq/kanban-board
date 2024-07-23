@@ -1,32 +1,20 @@
 import React, { useState } from "react";
-import { useCreateTask } from "@/hooks/useTasks";
 
 interface AddTaskModalProps {
   listId: string;
   onClose: () => void;
+  onAdd: (title: string, description: string) => void;
 }
 
-const AddTaskModal: React.FC<AddTaskModalProps> = ({ listId, onClose }) => {
+const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const createTaskMutation = useCreateTask();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      createTaskMutation.mutate(
-        {
-          title,
-          description,
-          completed: false,
-          listId,
-        },
-        {
-          onSuccess: () => {
-            onClose();
-          },
-        }
-      );
+      onAdd(title, description);
+      onClose();
     }
   };
 

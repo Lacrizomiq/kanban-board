@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   useLists,
   useCreateList,
   useUpdateList,
   useDeleteList,
 } from "@/hooks/useLists";
-import { List } from "@/schemas";
+import { Task, List } from "@/schemas";
 import { PlusIcon, PencilIcon, TrashIcon } from "@/components/Icons/Icons";
 import TaskComponent from "@/components/Task/Task";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, useUpdateTask, useCreateTask } from "@/hooks/useTasks";
 import AddTaskModal from "@/components/Task/addTaskModal";
+import TaskModal from "@/components/Task/TaskModal";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ListComponentProps {
   boardId: string;
@@ -19,15 +21,6 @@ const ListComponent: React.FC<ListComponentProps> = ({ boardId }) => {
   const [newListName, setNewListName] = useState("");
   const { data: lists, isLoading, error } = useLists(boardId);
   const createListMutation = useCreateList();
-
-  if (isLoading)
-    return <div className="text-center py-4">Loading lists...</div>;
-  if (error)
-    return (
-      <div className="text-center py-4 text-red-500">
-        Error loading lists: {error.message}
-      </div>
-    );
 
   const handleCreateList = () => {
     if (newListName.trim()) {
@@ -44,11 +37,25 @@ const ListComponent: React.FC<ListComponentProps> = ({ boardId }) => {
     }
   };
 
+  if (isLoading)
+    return <div className="text-center py-4">Loading lists...</div>;
+  if (error)
+    return (
+      <div className="text-center py-4 text-red-500">
+        Error loading lists: {error.message}
+      </div>
+    );
+
   return (
-    <div className="flex overflow-x-auto space-x-4 p-4 ">
+    <div className="flex overflow-x-auto space-x-4 p-4">
       {lists &&
         lists.map((list) => (
-          <ListItem key={list.id} list={list} boardId={boardId} />
+          <ListItem
+            key={list.id}
+            list={list}
+            boardId={boardId}
+            allLists={lists}
+          />
         ))}
       <div className="flex-shrink-0 w-72">
         {!newListName ? (
@@ -90,16 +97,23 @@ const ListComponent: React.FC<ListComponentProps> = ({ boardId }) => {
   );
 };
 
-const ListItem: React.FC<{ list: List; boardId: string }> = ({
-  list,
-  boardId,
-}) => {
+interface ListItemProps {
+  list: List;
+  boardId: string;
+  allLists: List[];
+}
+
+const ListItem: React.FC<ListItemProps> = ({ list, boardId, allLists }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(list.name);
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const updateListMutation = useUpdateList();
   const deleteListMutation = useDeleteList();
   const { data: tasks, isLoading: isLoadingTasks } = useTasks(list.id);
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+  const queryClient = useQueryClient();
 
   const handleUpdateList = () => {
     if (editedName.trim() && editedName !== list.name) {
@@ -120,6 +134,58 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
   const handleDeleteList = () => {
     if (window.confirm("Are you sure you want to delete this list?")) {
       deleteListMutation.mutate({ listId: list.id, boardId });
+    }
+  };
+
+  const handleAddTask = useCallback(
+    (title: string, description: string) => {
+      createTaskMutation.mutate(
+        {
+          title,
+          description,
+          listId: list.id,
+          completed: false,
+          order: tasks ? tasks.length : 0,
+        },
+        {
+          onSuccess: () => {
+            setIsAddingTask(false);
+          },
+        }
+      );
+    },
+    [createTaskMutation, list.id, tasks]
+  );
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  const handleCloseTaskModal = () => {
+    setSelectedTask(null);
+  };
+
+  const handleUpdateTask = (updatedTask: Partial<Task>) => {
+    if (selectedTask) {
+      updateTaskMutation.mutate(
+        { ...selectedTask, ...updatedTask },
+        {
+          onSuccess: (updatedTask) => {
+            setSelectedTask(null);
+            // Mise à jour du cache React Query
+            queryClient.setQueryData<Task[]>(["tasks", list.id], (oldTasks) => {
+              if (!oldTasks) return oldTasks;
+              if (updatedTask.listId === list.id) {
+                return oldTasks.map((task) =>
+                  task.id === updatedTask.id ? updatedTask : task
+                );
+              } else {
+                return oldTasks.filter((task) => task.id !== updatedTask.id);
+              }
+            });
+          },
+        }
+      );
     }
   };
 
@@ -160,8 +226,12 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
         {isLoadingTasks ? (
           <div>Loading tasks...</div>
         ) : (
-          tasks?.map((task) => (
-            <TaskComponent key={task.id} task={task} listId={list.id} />
+          tasks?.map((task: Task) => (
+            <TaskComponent
+              key={task.id}
+              task={task}
+              onClick={handleTaskClick}
+            />
           ))
         )}
       </div>
@@ -174,7 +244,19 @@ const ListItem: React.FC<{ list: List; boardId: string }> = ({
         </button>
       </div>
       {isAddingTask && (
-        <AddTaskModal listId={list.id} onClose={() => setIsAddingTask(false)} />
+        <AddTaskModal
+          listId={list.id}
+          onClose={() => setIsAddingTask(false)}
+          onAdd={handleAddTask}
+        />
+      )}
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          lists={allLists}
+          onClose={handleCloseTaskModal}
+          onUpdate={handleUpdateTask}
+        />
       )}
     </div>
   );
