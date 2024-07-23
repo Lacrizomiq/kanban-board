@@ -80,8 +80,16 @@ export const getTasks = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   const { id } = req.params;
-  const { title, description, completed, dueDate, listId, tagId, assigneeId } =
-    req.body;
+  const {
+    title,
+    description,
+    completed,
+    dueDate,
+    listId,
+    tagId,
+    assigneeId,
+    order,
+  } = req.body;
   const userId = req.user.id;
 
   const task = await prisma.task.findUnique({
