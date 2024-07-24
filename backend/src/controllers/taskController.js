@@ -106,6 +106,11 @@ export const updateTask = async (req, res) => {
 
     await checkBoardAccess(userId, task.list.boardId, "editor");
 
+    // Filtrer les champs undefined ou null
+    const filteredUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+
     // Si la tâche change de liste, mettez à jour l'ordre de toutes les tâches affectées
     if (listId && listId !== task.listId) {
       await prisma.$transaction(async (prisma) => {
@@ -116,18 +121,20 @@ export const updateTask = async (req, res) => {
         });
 
         // Incrémenter l'ordre des tâches dans la nouvelle liste
-        await prisma.task.updateMany({
-          where: { listId, order: { gte: order } },
-          data: { order: { increment: 1 } },
-        });
+        if (order !== undefined) {
+          await prisma.task.updateMany({
+            where: { listId, order: { gte: order } },
+            data: { order: { increment: 1 } },
+          });
+        }
 
         // Mettre à jour la tâche
         const updatedTask = await prisma.task.update({
           where: { id },
           data: {
-            ...updateData,
+            ...filteredUpdateData,
             listId,
-            order,
+            order: order !== undefined ? order : undefined,
           },
         });
 
@@ -138,8 +145,8 @@ export const updateTask = async (req, res) => {
       const updatedTask = await prisma.task.update({
         where: { id },
         data: {
-          ...updateData,
-          order,
+          ...filteredUpdateData,
+          order: order !== undefined ? order : undefined,
         },
       });
 
