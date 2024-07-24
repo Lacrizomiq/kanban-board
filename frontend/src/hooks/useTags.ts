@@ -27,9 +27,9 @@ export const useCreateTag = () => {
 
 export const useUpdateTag = () => {
   const queryClient = useQueryClient();
-  return useMutation<Tag, Error, Tag>({
-    mutationFn: async (updatedTag) => {
-      const { data } = await api.put<Tag>(`/tags/${updatedTag.id}`, updatedTag);
+  return useMutation<Tag, Error, Partial<Tag> & { id: string }>({
+    mutationFn: async ({ id, ...updateData }) => {
+      const { data } = await api.put<Tag>(`/tags/${id}`, updateData);
       return data;
     },
     onSuccess: () => {

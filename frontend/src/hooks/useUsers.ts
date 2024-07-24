@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { User } from "@/schemas";
+import { User, UserBoards } from "@/schemas";
 
 export const useUsers = () => {
   return useQuery<User[]>({
@@ -12,11 +12,18 @@ export const useUsers = () => {
   });
 };
 
-export const useCreateUser = () => {
+export const useRegisterUser = () => {
   const queryClient = useQueryClient();
-  return useMutation<User, Error, Omit<User, "id">>({
-    mutationFn: async (newUser) => {
-      const { data } = await api.post<User>("/users", newUser);
+  return useMutation<
+    { user: User; token: string },
+    Error,
+    { email: string; password: string; name?: string }
+  >({
+    mutationFn: async (userData) => {
+      const { data } = await api.post<{ user: User; token: string }>(
+        "/users/register",
+        userData
+      );
       return data;
     },
     onSuccess: () => {
@@ -27,16 +34,41 @@ export const useCreateUser = () => {
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  return useMutation<User, Error, User>({
-    mutationFn: async (updatedUser) => {
-      const { data } = await api.put<User>(
-        `/users/${updatedUser.id}`,
-        updatedUser
-      );
+  return useMutation<User, Error, Partial<User>>({
+    mutationFn: async (updateData) => {
+      const { data } = await api.put<User>("/users/me", updateData);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useInviteUser = () => {
+  return useMutation<{ message: string; role: string }, Error, string>({
+    mutationFn: async (inviteData) => {
+      const { data } = await api.post<{ message: string; role: string }>(
+        "/users/invite",
+        inviteData
+      );
+      return data;
+    },
+  });
+};
+
+export const useUpdateBoardAccess = () => {
+  return useMutation<
+    { message: string; updatedAccess: UserBoards },
+    Error,
+    string
+  >({
+    mutationFn: async (boardId) => {
+      const { data } = await api.post<{
+        message: string;
+        updatedAccess: UserBoards;
+      }>("/users/me/boards", boardId);
+      return data;
     },
   });
 };
