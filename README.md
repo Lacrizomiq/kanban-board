@@ -35,6 +35,13 @@ A small Kanban board where users can create project, add tasks to a list and man
 
 - Node.js
 - Prisma
+- PostgreSQL
+- Docker
+- Docker Compose
+- Tailwind CSS
+- Prisma
+- Zod
+- bcryptjs
 
 ### Installation
 
