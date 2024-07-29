@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Task, List } from "@/schemas";
-import { useDeleteTask, useUpdateTask, useAssignTask } from "@/hooks/useTasks";
+import { useDeleteTask, useUpdateTask } from "@/hooks/useTasks";
 import { useTags } from "@/hooks/useTags";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { X } from "lucide-react";
-import { useBoardUsers } from "@/hooks/useBoardUsers";
 
 interface TaskModalProps {
   task: Task;
@@ -28,7 +27,7 @@ interface TaskModalProps {
 const TaskModal: React.FC<TaskModalProps> = ({
   task,
   lists,
-  boardId,
+  //boardId,
   onClose,
   onUpdate,
 }) => {
@@ -42,15 +41,18 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(
     task.tagId || undefined
   );
+
+  /*
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<
     string | undefined
   >(task.assigneeId || undefined);
+  */
 
   const deleteTaskMutation = useDeleteTask();
   const updateTaskMutation = useUpdateTask();
-  const assignTaskMutation = useAssignTask();
+  // const assignTaskMutation = useAssignTask();
   const { data: tags } = useTags();
-  const { data: users, isLoading: isLoadingUsers } = useBoardUsers(boardId);
+  // const { data: users, isLoading: isLoadingUsers } = useBoardUsers(boardId);
 
   const handleSave = () => {
     const updatedTask: Partial<Task> = {
@@ -61,7 +63,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
       completed,
       dueDate: dueDate instanceof Date ? dueDate.toISOString() : dueDate,
       tagId: selectedTagId,
-      assigneeId: selectedAssigneeId,
+      // assigneeId: selectedAssigneeId,
     };
 
     updateTaskMutation.mutate(updatedTask, {
@@ -85,26 +87,26 @@ const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
 
-  const handleAssign = (userId: string) => {
-    setSelectedAssigneeId(userId);
-    if (userId) {
-      assignTaskMutation.mutate(
-        { id: task.id, assigneeId: userId },
-        {
-          onSuccess: (updatedTask) =>
-            setSelectedAssigneeId(updatedTask.assigneeId),
-        }
-      );
-    }
-  };
+  // const handleAssign = (userId: string) => {
+  //   setSelectedAssigneeId(userId);
+  //   if (userId) {
+  //     assignTaskMutation.mutate(
+  //       { id: task.id, assigneeId: userId },
+  //       {
+  //         onSuccess: (updatedTask) =>
+  //           setSelectedAssigneeId(updatedTask.assigneeId),
+  //       }
+  //     );
+  //   }
+  // };
 
   const handleClearDate = () => {
     setDueDate(undefined);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
+      <div className="h-full overflow-y-auto p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Task Details</h2>
           <Button variant="ghost" onClick={onClose}>
@@ -113,10 +115,11 @@ const TaskModal: React.FC<TaskModalProps> = ({
         </div>
 
         <div className="space-y-4">
+          {/* Title */}
           <div>
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
               Title
             </label>
@@ -127,10 +130,12 @@ const TaskModal: React.FC<TaskModalProps> = ({
               className="mt-1"
             />
           </div>
+
+          {/* Description */}
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
               Description
             </label>
@@ -142,10 +147,12 @@ const TaskModal: React.FC<TaskModalProps> = ({
               rows={3}
             />
           </div>
+
+          {/* List */}
           <div>
             <label
               htmlFor="list"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 mb-"
             >
               List
             </label>
@@ -162,6 +169,8 @@ const TaskModal: React.FC<TaskModalProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Completed */}
           <div className="flex items-center">
             <Checkbox
               id="completed"
@@ -172,10 +181,12 @@ const TaskModal: React.FC<TaskModalProps> = ({
               Completed
             </label>
           </div>
+
+          {/* Due Date */}
           <div>
             <label
               htmlFor="dueDate"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
               Due Date
             </label>
@@ -193,64 +204,42 @@ const TaskModal: React.FC<TaskModalProps> = ({
               )}
             </div>
           </div>
-          {tags && tags.length > 0 && (
-            <div>
-              <label
-                htmlFor="tag"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Tag
-              </label>
-              <Select
-                value={selectedTagId || ""}
-                onValueChange={(value) => setSelectedTagId(value || undefined)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No tag</SelectItem>
-                  {tags.map((tag) => (
-                    <SelectItem key={tag.id} value={tag.id}>
-                      {tag.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
-          {isLoadingUsers ? (
-            <p>Loading users...</p>
-          ) : users && users.length > 0 ? (
-            <div>
-              <label
-                htmlFor="assignee"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Assignee
-              </label>
-              <Select
-                value={selectedAssigneeId || ""}
-                onValueChange={handleAssign}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select an assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name || user.email}
+          {/* Tags */}
+          <div>
+            <label
+              htmlFor="tag"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Tag
+            </label>
+            <Select
+              value={selectedTagId || undefined}
+              onValueChange={(value) => setSelectedTagId(value || undefined)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no-tag">No tag</SelectItem>
+                {tags &&
+                  tags.map((tag) => (
+                    <SelectItem key={tag.id} value={tag.id}>
+                      <div className="flex items-center">
+                        <div
+                          className="w-3 h-3 rounded-full mr-2"
+                          style={{ backgroundColor: tag.color }}
+                        ></div>
+                        {tag.name}
+                      </div>
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <p>No users available for assignment</p>
-          )}
-          <div className="flex space-x-2">
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-2 pt-4">
             <Button onClick={handleSave} className="flex-grow">
               Save Changes
             </Button>
