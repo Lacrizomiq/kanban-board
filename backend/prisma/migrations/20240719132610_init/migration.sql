@@ -95,3 +95,12 @@ ALTER TABLE "Task" ADD CONSTRAINT "Task_tagId_fkey" FOREIGN KEY ("tagId") REFERE
 
 -- AddForeignKey
 ALTER TABLE "Task" ADD CONSTRAINT "Task_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+
+-- InsertDefaultTags
+INSERT INTO "Tag" ("id", "name", "color")
+VALUES 
+  (gen_random_uuid(), 'High Priority', '#FF0000'),
+  (gen_random_uuid(), 'Medium Priority', '#FFA500'),
+  (gen_random_uuid(), 'Low Priority', '#00FF00')
+ON CONFLICT (id) DO NOTHING;

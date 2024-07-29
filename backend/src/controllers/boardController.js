@@ -150,3 +150,45 @@ export const deleteBoard = async (req, res, next) => {
     next(new ApiError(500, "Failed to delete board", error.message));
   }
 };
+
+export const getBoardUsers = asyncHandler(async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const userId = req.user.id;
+
+    const board = await prisma.board.findFirst({
+      where: {
+        id: boardId,
+        OR: [{ ownerId: userId }, { sharedWith: { some: { userId } } }],
+      },
+      include: {
+        sharedWith: {
+          where: { userId },
+          select: { role: true },
+        },
+      },
+    });
+
+    if (!board) {
+      throw new ApiError(404, "Board not found");
+    }
+
+    const boardUsers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { id: board.ownerId },
+          { sharedBoards: { some: { boardId: id } } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    res.json(boardUsers);
+  } catch (error) {
+    next(error);
+  }
+});

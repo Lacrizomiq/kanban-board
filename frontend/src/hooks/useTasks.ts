@@ -7,7 +7,7 @@ export const useTasks = (listId: string) => {
     queryKey: ["tasks", listId],
     queryFn: async () => {
       const { data } = await api.get(`/tasks/list/${listId}`);
-      return data;
+      return data.sort((a: Task, b: Task) => a.order - b.order);
     },
   });
 };
@@ -17,7 +17,13 @@ export const useCreateTask = () => {
   return useMutation<
     Task,
     Error,
-    Omit<Task, "id" | "createdAt" | "updatedAt" | "list" | "tag" | "assignee">
+    Pick<Task, "title" | "description" | "listId" | "order" | "completed"> &
+      Partial<
+        Omit<
+          Task,
+          "id" | "createdAt" | "updatedAt" | "list" | "tag" | "assignee"
+        >
+      >
   >({
     mutationFn: async (newTask) => {
       const { data } = await api.post<Task>("/tasks", newTask);
@@ -31,21 +37,19 @@ export const useCreateTask = () => {
 
 export const useUpdateTask = () => {
   const queryClient = useQueryClient();
-  return useMutation<
-    Task,
-    Error,
-    Partial<Task> & { id: string; order?: number }
-  >({
-    mutationFn: async ({ id, order, ...updateData }) => {
-      const { data } = await api.put<Task>(`/tasks/${id}`, {
-        ...updateData,
-        order,
-      });
+  return useMutation<Task, Error, Partial<Task>>({
+    mutationFn: async (updateData) => {
+      const { data } = await api.put<Task>(
+        `/tasks/${updateData.id}`,
+        updateData
+      );
       return data;
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", data.listId] });
-      if (variables.listId && variables.listId !== data.listId) {
+    onSuccess: (updatedTask, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["tasks", updatedTask.listId],
+      });
+      if (variables.listId && variables.listId !== updatedTask.listId) {
         queryClient.invalidateQueries({
           queryKey: ["tasks", variables.listId],
         });

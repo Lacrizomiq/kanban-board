@@ -38,6 +38,7 @@ const baseTask = z.object({
   listId: z.string().uuid(),
   tagId: z.string().uuid().optional(),
   assigneeId: z.string().uuid().optional(),
+  order: z.number().int().nonnegative(),
 });
 
 const baseTag = z.object({

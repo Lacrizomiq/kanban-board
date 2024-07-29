@@ -26,7 +26,16 @@ const checkBoardAccess = async (userId, boardId, requiredRole) => {
 };
 
 export const createTask = async (req, res) => {
-  const { title, description, listId, dueDate, tagId, assigneeId } = req.body;
+  const {
+    title,
+    description,
+    listId,
+    order,
+    completed,
+    dueDate,
+    tagId,
+    assigneeId,
+  } = req.body;
   const userId = req.user.id;
 
   const list = await prisma.list.findUnique({
@@ -45,6 +54,8 @@ export const createTask = async (req, res) => {
       title,
       description,
       listId,
+      order,
+      completed,
       dueDate: dueDate ? new Date(dueDate) : undefined,
       tagId,
       assigneeId,
@@ -80,45 +91,71 @@ export const getTasks = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   const { id } = req.params;
-  const {
-    title,
-    description,
-    completed,
-    dueDate,
-    listId,
-    tagId,
-    assigneeId,
-    order,
-  } = req.body;
+  const { listId, order, ...updateData } = req.body;
   const userId = req.user.id;
 
-  const task = await prisma.task.findUnique({
-    where: { id },
-    include: { list: { include: { board: true } } },
-  });
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: { list: { include: { board: true } } },
+    });
 
-  if (!task) {
-    throw new ApiError(404, "Task not found");
+    if (!task) {
+      throw new ApiError(404, "Task not found");
+    }
+
+    await checkBoardAccess(userId, task.list.boardId, "editor");
+
+    // Filtrer les champs undefined ou null
+    const filteredUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+
+    // Si la tâche change de liste, mettez à jour l'ordre de toutes les tâches affectées
+    if (listId && listId !== task.listId) {
+      await prisma.$transaction(async (prisma) => {
+        // Décrémenter l'ordre des tâches dans l'ancienne liste
+        await prisma.task.updateMany({
+          where: { listId: task.listId, order: { gt: task.order } },
+          data: { order: { decrement: 1 } },
+        });
+
+        // Incrémenter l'ordre des tâches dans la nouvelle liste
+        if (order !== undefined) {
+          await prisma.task.updateMany({
+            where: { listId, order: { gte: order } },
+            data: { order: { increment: 1 } },
+          });
+        }
+
+        // Mettre à jour la tâche
+        const updatedTask = await prisma.task.update({
+          where: { id },
+          data: {
+            ...filteredUpdateData,
+            listId,
+            order: order !== undefined ? order : undefined,
+          },
+        });
+
+        res.json(updatedTask);
+      });
+    } else {
+      // Si la tâche reste dans la même liste, mettez simplement à jour ses données
+      const updatedTask = await prisma.task.update({
+        where: { id },
+        data: {
+          ...filteredUpdateData,
+          order: order !== undefined ? order : undefined,
+        },
+      });
+
+      res.json(updatedTask);
+    }
+  } catch (error) {
+    console.error("Error updating task:", error);
+    res.status(500).json({ message: "Error updating task" });
   }
-
-  await checkBoardAccess(userId, task.list.boardId, "editor");
-
-  const updatedTask = await prisma.task.update({
-    where: { id },
-    data: {
-      title,
-      description,
-      completed,
-      dueDate: dueDate ? new Date(dueDate) : undefined,
-      order,
-      listId,
-      tagId,
-      assigneeId,
-    },
-    include: { tag: true, assignee: true },
-  });
-
-  res.json(updatedTask);
 };
 
 export const deleteTask = async (req, res) => {

@@ -5,6 +5,7 @@ import {
   getBoardById,
   updateBoard,
   deleteBoard,
+  getBoardUsers,
 } from "../controllers/boardController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import validateRequest from "../middleware/validateRequest.js";
@@ -22,6 +23,7 @@ router.get("/", getBoards);
 router.get("/:id", getBoardById);
 router.put("/:id", validateRequest(updateBoardSchema), updateBoard);
 router.delete("/:id", deleteBoard);
+router.get("/:id/users", getBoardUsers);
 
 export default router;
 
